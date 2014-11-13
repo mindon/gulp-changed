@@ -111,3 +111,10 @@ describe('compareSha1Digest', function () {
 			}));
 	});
 });
+
+describe('findLatestVer', function () {
+    var result = './fixture/version/v1.2/a-v1.10b.txt';
+	it('should be "' + result +'"', function () {
+        assert.equal(changed.findLatestVer("./fixture/version/v\\d+\\.\\d+/a-v\\d+\\.\\d+.*\\.txt"), result);
+	});
+});

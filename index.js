@@ -24,8 +24,60 @@ function sha1(buf) {
 	return crypto.createHash('sha1').update(buf).digest('hex');
 }
 
+function verCompare(a, b) {
+    var r = /[^\d]+/, tr = /^[^\d]+|[^\d]+$/g;
+    var as = a.replace(tr, ''), bs = b.replace(tr, '');
+    var da = as.split(r), db = bs.split(r);
+    for(var i=0; i<da.length; i++) {
+        if(da[i].length != db[i].length) {
+            var ai = parseInt(da[i], 10), bi = parseInt(db[i], 10);
+            if( ai != bi )
+                return ai < bi;
+        } else if(da[i] == db[i]) {
+            continue;
+        } else {
+            return da[i] < db[i];
+        }
+    }
+    return a.toLowerCase() < b.toLowerCase();
+}
+
+function targetVerPath(targetPattern) {
+    // version number must contained when not a pure path
+    var vxp = /\\d|\[/;
+    if(!vxp.test(targetPattern)) {
+        return targetPattern; // pure path
+    }
+    var segs = targetPattern.split('/'), fpaths = [];
+    for(var i=0, imax=segs.length; i<imax; i++) {
+        var seg = segs[i];
+        if(seg == '.') {
+           continue;
+        } else if(seg == '..') {
+           fpaths.pop();
+        } else {
+            if( vxp.test(seg) ) {
+                var rxp = new RegExp('^'+seg+'$'), pr = fpaths.length>0 ? fpaths.join('/') +'/' : './';
+                var p = fs.readdirSync(pr).filter(function (file) {
+                    return rxp.test(file);
+                });
+                if( p.length == 0 ) {
+                    return './' +fpaths.join('/') +'/';
+                } else if( p.length > 1 ) {
+                    p.sort(verCompare);
+                }
+                fpaths.push(p[0]);
+            } else {
+                fpaths.push(seg);
+            }
+        }
+    }
+    return './' +fpaths.join('/');
+}
+
 // only push through files changed more recently than the destination files
 function compareLastModifiedTime(stream, cb, sourceFile, targetPath) {
+    targetPath = targetVerPath(targetPath);
 	fs.stat(targetPath, function (err, targetStat) {
 		if (!fsOperationFailed(stream, sourceFile, err)) {
 			if (sourceFile.stat.mtime > targetStat.mtime) {
@@ -39,6 +91,7 @@ function compareLastModifiedTime(stream, cb, sourceFile, targetPath) {
 
 // only push through files with different SHA1 than the destination files
 function compareSha1Digest(stream, cb, sourceFile, targetPath) {
+    targetPath = targetVerPath(targetPath);
 	fs.readFile(targetPath, function (err, targetData) {
 		if (!fsOperationFailed(stream, sourceFile, err)) {
 			var sourceDigest = sha1(sourceFile.contents);
@@ -80,3 +133,4 @@ module.exports = function (dest, opts) {
 
 module.exports.compareLastModifiedTime = compareLastModifiedTime;
 module.exports.compareSha1Digest = compareSha1Digest;
+module.exports.findLatestVer = targetVerPath;
