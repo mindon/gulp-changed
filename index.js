@@ -77,7 +77,7 @@ function targetVerPath(targetPattern) {
 
 // only push through files changed more recently than the destination files
 function compareLastModifiedTime(stream, cb, sourceFile, targetPath) {
-    targetPath = targetVerPath(targetPath);
+	targetPath = targetVerPath(targetPath);
 	fs.stat(targetPath, function (err, targetStat) {
 		if (!fsOperationFailed(stream, sourceFile, err)) {
 			if (sourceFile.stat.mtime > targetStat.mtime) {
@@ -91,7 +91,7 @@ function compareLastModifiedTime(stream, cb, sourceFile, targetPath) {
 
 // only push through files with different SHA1 than the destination files
 function compareSha1Digest(stream, cb, sourceFile, targetPath) {
-    targetPath = targetVerPath(targetPath);
+	targetPath = targetVerPath(targetPath);
 	fs.readFile(targetPath, function (err, targetData) {
 		if (!fsOperationFailed(stream, sourceFile, err)) {
 			var sourceDigest = sha1(sourceFile.contents);
